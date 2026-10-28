@@ -9,7 +9,30 @@
 <body>
 <header>
 <h1>🚀 Hermes Kanban - Painel de Tarefas</h1>
+<div id="controls">
+<label>Perfil:
+<select id="profileSelect">
+<option value="">Todos</option>
+<option value="fernanda">fernanda</option>
+<option value="joao">joao</option>
+<option value="nina">nina</option>
+<option value="andre">andre</option>
+</select>
+</label>
+<label>Status:
+<select id="statusSelect">
+<option value="">Todos</option>
+<option value="todo">todo</option>
+<option value="ready">ready</option>
+<option value="running">running</option>
+<option value="done">done</option>
+<option value="archived">archived</option>
+<option value="blocked">blocked</option>
+</select>
+</label>
+<button id="refreshBtn">Atualizar</button>
 <div id="status">Carregando...</div>
+</div>
 </header>
 <main>
 <section id="stats">
@@ -18,7 +41,10 @@
 </section>
 <section id="tasks">
 <h2>Tarefas</h2>
-<pre id="tasksBox">...</pre>
+<table id="tasksTable">
+<thead><tr><th>ID</th><th>Título</th><th>Status</th><th>Assignee</th><th>Criado</th><th>Concluído</th></tr></thead>
+<tbody></tbody>
+</table>
 </section>
 </main>
 <script src="app.js"></script>

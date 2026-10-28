@@ -1,0 +1,10 @@
+services:
+  kanban-dashboard:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - KANBAN_DB=/opt/data/kanban.db
+      - KANBAN_BOARD=default
+    volumes:
+      - /opt/data/kanban.db:/opt/data/kanban.db:ro

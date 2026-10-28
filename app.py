@@ -12,7 +12,26 @@ BOARD = os.getenv('KANBAN_BOARD', 'default')
 PROFILE = os.getenv('KANBAN_PROFILE', '')
 
 def db_conn():
-    return sqlite3.connect(KANBAN_DB, check_same_thread=False, timeout=30)
+    db_path = os.getenv('KANBAN_DB', KANBAN_DB)
+    # Fallback: create empty DB if missing to avoid crash on first deploy
+    if not os.path.exists(db_path):
+        # ensure directory exists
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        conn_tmp = sqlite3.connect(db_path)
+        cur = conn_tmp.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                status TEXT,
+                assignee TEXT,
+                created_at INTEGER,
+                completed_at INTEGER
+            )
+        """)
+        conn_tmp.commit()
+        conn_tmp.close()
+    return sqlite3.connect(db_path, check_same_thread=False, timeout=30)
 
 @app.route('/api/stats')
 def stats():

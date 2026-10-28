@@ -104,6 +104,27 @@ def tasks():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/health')
+def health():
+    db_path = os.getenv('KANBAN_DB', KANBAN_DB)
+    exists = os.path.exists(db_path)
+    size = os.path.getsize(db_path) if exists else 0
+    tables = []
+    try:
+        conn = db_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [r[0] for r in cur.fetchall()]
+        conn.close()
+    except Exception as e:
+        tables = [f'error: {e}']
+    return jsonify({
+        'db_path': db_path,
+        'exists': exists,
+        'size': size,
+        'tables': tables
+    })
+
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')

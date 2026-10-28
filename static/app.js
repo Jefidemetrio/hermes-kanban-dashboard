@@ -1,9 +1,11 @@
 const statusEl = document.getElementById('status');
 const statsBox = document.getElementById('statsBox');
+const assigneeSummary = document.getElementById('assigneeSummary');
 const profileSelect = document.getElementById('profileSelect');
 const statusSelect = document.getElementById('statusSelect');
 const refreshBtn = document.getElementById('refreshBtn');
-const tbody = document.querySelector('#tasksTable tbody');
+const tbody = document.querySelector('#tasksTbody');
+const taskCount = document.getElementById('taskCount');
 
 async function fetchJSON(url){
   const res = await fetch(url);
@@ -23,6 +25,10 @@ async function refresh(){
     const statsUrl = '/api/stats' + (profile ? `?profile=${encodeURIComponent(profile)}` : '');
     const stats = await fetchJSON(statsUrl);
     statsBox.textContent = JSON.stringify(stats,null,2);
+    if(assigneeSummary){
+      const by = stats.by_assignee || {};
+      assigneeSummary.innerHTML = Object.entries(by).map(([k,v])=>`<span class="badge bg-light text-dark me-1 mb-1">${k}: ${v}</span>`).join('');
+    }
     
     const tasksUrl = '/api/tasks?' + new URLSearchParams({
       ...(profile && {profile}),
@@ -33,9 +39,10 @@ async function refresh(){
     tbody.innerHTML = '';
     (data.tasks || []).forEach(t => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${t.id}</td><td>${t.title}</td><td>${t.status}</td><td>${t.assignee||''}</td><td>${fmt(t.created_at)}</td><td>${fmt(t.completed_at)}</td>`;
+      tr.innerHTML = `<td><code>${t.id}</code></td><td>${t.title}</td><td><span class="badge bg-secondary">${t.status}</span></td><td>${t.assignee||''}</td><td>${fmt(t.created_at)}</td><td>${fmt(t.completed_at)}</td>`;
       tbody.appendChild(tr);
     });
+    if(taskCount) taskCount.textContent = (data.tasks||[]).length;
     statusEl.textContent = 'Atualizado em ' + new Date().toLocaleTimeString();
   }catch(e){
     statusEl.textContent = 'Erro ao atualizar';

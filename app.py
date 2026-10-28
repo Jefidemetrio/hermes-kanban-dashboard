@@ -13,9 +13,19 @@ PROFILE = os.getenv('KANBAN_PROFILE', '')
 
 def db_conn():
     db_path = os.getenv('KANBAN_DB', KANBAN_DB)
+    # try alternatives if file missing
+    candidates = [
+        db_path,
+        '/opt/data/kanban.db',
+        '/data/kanban.db',
+        '/app/kanban.db'
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            db_path = path
+            break
     # Fallback: create empty DB if missing to avoid crash on first deploy
     if not os.path.exists(db_path):
-        # ensure directory exists
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         conn_tmp = sqlite3.connect(db_path)
         cur = conn_tmp.cursor()

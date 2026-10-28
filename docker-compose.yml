@@ -7,4 +7,4 @@ services:
       - KANBAN_DB=/opt/data/kanban.db
       - KANBAN_BOARD=default
     volumes:
-      - /opt/data/kanban.db:/opt/data/kanban.db:ro
+      - /opt/data:/opt/data:ro

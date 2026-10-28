@@ -14,9 +14,7 @@ BOARD = os.getenv('KANBAN_BOARD', 'default')
 PROFILE = os.getenv('KANBAN_PROFILE', '')
 
 def db_conn():
-    import shutil
     db_path = os.getenv('KANBAN_DB', KANBAN_DB)
-    # try alternatives if file missing
     candidates = [
         db_path,
         '/opt/data/kanban.db',
@@ -25,39 +23,20 @@ def db_conn():
     ]
     chosen = None
     for path in candidates:
-        if os.path.exists(path):
+        if os.path.isfile(path):
             chosen = path
             break
-    # If we have a read-only mount, copy to tmp for write-safe access
-    if chosen and not os.access(chosen, os.R_OK):
-        chosen = None
-    # fallback to copy
-    if chosen:
-        tmp_path = '/tmp/kanban_copy.db'
-        try:
-            if not os.path.exists(tmp_path) or os.path.getsize(chosen) != os.path.getsize(tmp_path):
-                shutil.copy2(chosen, tmp_path)
-            db_path = tmp_path
-        except Exception:
-            db_path = chosen
-    else:
-        # Create empty DB if missing
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        conn_tmp = sqlite3.connect(db_path)
-        cur = conn_tmp.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS tasks (
-                id TEXT PRIMARY KEY,
-                title TEXT,
-                status TEXT,
-                assignee TEXT,
-                created_at INTEGER,
-                completed_at INTEGER
-            )
-        """)
-        conn_tmp.commit()
-        conn_tmp.close()
-    return sqlite3.connect(db_path, check_same_thread=False, timeout=30)
+    if not chosen:
+        raise FileNotFoundError(f'Kanban DB not found in candidates: {candidates}')
+    # Use read-only URI to avoid write issues on read-only mounts
+    # SQLite read-only mode requires file URI
+    try:
+        uri = f'file:{chosen}?mode=ro&cache=shared'
+        conn = sqlite3.connect(uri, uri=True, check_same_thread=False, timeout=30)
+        return conn
+    except Exception:
+        # fallback to regular connect
+        return sqlite3.connect(chosen, check_same_thread=False, timeout=30)
 
 @app.route('/api/stats')
 def stats():

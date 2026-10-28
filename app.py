@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import traceback
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 
@@ -11,7 +12,7 @@ BOARD = os.getenv('KANBAN_BOARD', 'default')
 PROFILE = os.getenv('KANBAN_PROFILE', '')
 
 def db_conn():
-    return sqlite3.connect(KANBAN_DB, check_same_thread=False)
+    return sqlite3.connect(KANBAN_DB, check_same_thread=False, timeout=30)
 
 @app.route('/api/stats')
 def stats():
@@ -35,6 +36,7 @@ def stats():
             'by_assignee': {a:c for a,c in assignees if a}
         })
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/tasks')
@@ -80,6 +82,7 @@ def tasks():
         } for r in rows]
         return jsonify({'tasks': tasks_list, 'profile': profile or None})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/')

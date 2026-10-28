@@ -12,6 +12,7 @@ BOARD = os.getenv('KANBAN_BOARD', 'default')
 PROFILE = os.getenv('KANBAN_PROFILE', '')
 
 def db_conn():
+    import shutil
     db_path = os.getenv('KANBAN_DB', KANBAN_DB)
     # try alternatives if file missing
     candidates = [
@@ -20,12 +21,25 @@ def db_conn():
         '/data/kanban.db',
         '/app/kanban.db'
     ]
+    chosen = None
     for path in candidates:
         if os.path.exists(path):
-            db_path = path
+            chosen = path
             break
-    # Fallback: create empty DB if missing to avoid crash on first deploy
-    if not os.path.exists(db_path):
+    # If we have a read-only mount, copy to tmp for write-safe access
+    if chosen and not os.access(chosen, os.R_OK):
+        chosen = None
+    # fallback to copy
+    if chosen:
+        tmp_path = '/tmp/kanban_copy.db'
+        try:
+            if not os.path.exists(tmp_path) or os.path.getsize(chosen) != os.path.getsize(tmp_path):
+                shutil.copy2(chosen, tmp_path)
+            db_path = tmp_path
+        except Exception:
+            db_path = chosen
+    else:
+        # Create empty DB if missing
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         conn_tmp = sqlite3.connect(db_path)
         cur = conn_tmp.cursor()

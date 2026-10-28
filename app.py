@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import traceback
+import requests
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 
@@ -8,6 +9,7 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 
 KANBAN_DB = '/opt/data/kanban.db'
+KANBAN_API_URL = os.getenv('KANBAN_API_URL', '').strip()
 BOARD = os.getenv('KANBAN_BOARD', 'default')
 PROFILE = os.getenv('KANBAN_PROFILE', '')
 
@@ -60,6 +62,14 @@ def db_conn():
 @app.route('/api/stats')
 def stats():
     profile = request.args.get('profile', PROFILE)
+    if KANBAN_API_URL:
+        try:
+            r = requests.get(f"{KANBAN_API_URL}/stats", params={'profile': profile} if profile else {}, timeout=10)
+            r.raise_for_status()
+            return jsonify(r.json())
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
     try:
         conn = db_conn()
         cur = conn.cursor()
@@ -86,6 +96,18 @@ def stats():
 def tasks():
     profile = request.args.get('profile', PROFILE)
     status = request.args.get('status', '')
+    if KANBAN_API_URL:
+        try:
+            params = {}
+            if profile: params['profile'] = profile
+            if status: params['status'] = status
+            params['limit'] = request.args.get('limit','200')
+            r = requests.get(f"{KANBAN_API_URL}/tasks", params=params, timeout=10)
+            r.raise_for_status()
+            return jsonify(r.json())
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
     try:
         limit = int(request.args.get('limit','200'))
     except:
